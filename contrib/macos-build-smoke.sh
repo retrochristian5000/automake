@@ -158,14 +158,16 @@ prefix="$work/install"
     error 'installed Automake is not usable'
 "$prefix/bin/aclocal" --version | grep 'GNU automake' >/dev/null ||
     error 'installed aclocal is not usable'
+# --print-ac-dir reports the *system* macro directory, while
+# Automake's own versioned definitions reside in aclocal-$APIVERSION.
 acdir=$("$prefix/bin/aclocal" --print-ac-dir) ||
-    error 'aclocal cannot locate its macro directory'
-[ -d "$acdir" ] &&
-[ -f "$acdir/install-sh.m4" ] &&
-[ -f "$acdir/strip.m4" ] ||
-    error 'installed Automake macros are missing'
-[ "$acdir" = "$prefix/share/aclocal-$api" ] ||
-    error "aclocal selected wrong macro directory: $acdir"
+    error 'aclocal cannot locate its system macro directory'
+[ "$acdir" = "$prefix/share/aclocal" ] && [ -d "$acdir" ] ||
+    error "aclocal selected wrong system macro directory: $acdir"
+versioned_acdir="$prefix/share/aclocal-$api"
+[ -f "$versioned_acdir/install-sh.m4" ] &&
+[ -f "$versioned_acdir/strip.m4" ] ||
+    error "installed versioned Automake macros are missing: $versioned_acdir"
 
 printf 'PASS: macOS Automake bootstrap/build/check/install, API %s, %s\n' "$api" "$pin"
 if [ "${WHP_AUTOMAKE_KEEP_BUILD:-0}" = 1 ]; then
