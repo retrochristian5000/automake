@@ -1,0 +1,58 @@
+name: WHP Automake macOS bootstrap
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - bootstrap
+      - configure.ac
+      - GNUmakefile
+      - Makefile.am
+      - bin/**
+      - lib/**
+      - m4/**
+      - t/**
+      - contrib/macos-build-smoke.sh
+      - .github/workflows/macos-automake.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap-macos:
+    name: macOS ${{ matrix.arch }} Automake bootstrap
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - name: Check out WHP Automake
+        uses: actions/checkout@v4
+
+      - name: Install matching GNU bootstrap tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install autoconf m4 make
+          echo "GNU_AUTOCONF_DIR=$(brew --prefix autoconf)/bin" >> "$GITHUB_ENV"
+          echo "GNU_M4_DIR=$(brew --prefix m4)/bin" >> "$GITHUB_ENV"
+          echo "GNU_MAKE_DIR=$(brew --prefix make)/bin" >> "$GITHUB_ENV"
+
+      - name: Bootstrap, build, test, and install from isolated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$GNU_AUTOCONF_DIR:$GNU_M4_DIR:$GNU_MAKE_DIR:$PATH"
+          export WHP_AUTOMAKE_SEED_AUTOCONF="$GNU_AUTOCONF_DIR/autoconf"
+          export WHP_AUTOMAKE_SEED_AUTOM4TE="$GNU_AUTOCONF_DIR/autom4te"
+          export M4="$GNU_M4_DIR/m4"
+          echo "Running on $(uname -s) $(uname -m)"
+          test "$(uname -m)" = "${{ matrix.arch }}"
+          /bin/sh contrib/macos-build-smoke.sh
