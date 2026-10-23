@@ -32,11 +32,22 @@ autoconf=$(resolve "${WHP_AUTOMAKE_SEED_AUTOCONF:-autoconf}") ||
 autom4te=$(resolve "${WHP_AUTOMAKE_SEED_AUTOM4TE:-autom4te}") ||
     error 'matching GNU autom4te is required'
 perl=$(resolve "${PERL:-perl}") || error 'Perl is required'
+# Homebrew's GNU Make and Texinfo may be keg-only on macOS.
+# Discover their installed prefixes instead of trusting /usr/bin/make
+# or assuming 'brew install' exposed binaries on PATH.
+brew_tool()
+{
+    [ -n "${1:-}" ] && command -v brew >/dev/null 2>&1 || return 1
+    brew_dir=$(brew --prefix "$1" 2>/dev/null) || return 1
+    [ -x "$brew_dir/bin/$2" ] || return 1
+    printf '%s\\n' "$brew_dir/bin/$2"
+}
 make=
 if [ -n "${MAKE:-}" ]; then
     make=$(resolve "$MAKE") || error 'MAKE is unavailable'
 else
-    for candidate in gmake make; do
+    for candidate in gmake "$(brew_tool make gmake || true)" make; do
+        [ -n "$candidate" ] || continue
         if make=$(resolve "$candidate"); then
             if "$make" --version 2>/dev/null | grep 'GNU Make' >/dev/null; then
                 break
@@ -65,7 +76,8 @@ m4=
 if [ -n "${M4:-}" ]; then
     m4=$(resolve "$M4") || error 'explicit M4 is not executable'
 else
-    for candidate in gm4 m4; do
+    for candidate in gm4 "$(brew_tool m4 m4 || true)" m4; do
+        [ -n "$candidate" ] || continue
         if m4=$(resolve "$candidate"); then
             if "$m4" --gnu --version 2>/dev/null | grep 'GNU M4' >/dev/null; then
                 break
@@ -81,6 +93,16 @@ case "$m4" in
     *) error 'M4 must resolve to an absolute executable path' ;;
 esac
 
+# A development checkout regenerates doc/automake.info during make.
+# macOS does not reliably ship GNU Texinfo's makeinfo in the default PATH.
+makeinfo=$(resolve makeinfo || brew_tool texinfo makeinfo || true)
+[ -n "$makeinfo" ] ||
+    error 'GNU Texinfo makeinfo is required (brew install texinfo)'
+case "$makeinfo" in
+    /*) ;;
+    *) error 'makeinfo must resolve to an absolute executable path' ;;
+esac
+
 # Execute against committed source in a disposable clone. The upstream
 # bootstrap regenerates source files; never run it in the user's checkout.
 work=$(mktemp -d "${TMPDIR:-/tmp}/whp-automake-macos.XXXXXXXX") ||
@@ -94,7 +116,7 @@ trap 'exit 1' 1 2 3 15
 
 mkdir -p "$work/bin" "$work/build"
 ln -s "$m4" "$work/bin/m4" || error 'cannot expose GNU M4'
-PATH="$work/bin:$PATH"
+PATH="$work/bin:$(dirname "$makeinfo"):$PATH"
 export PATH
 M4="$m4"
 PERL="$perl"
@@ -112,6 +134,7 @@ printf 'WHP Automake macOS: host=%s arch=%s source=%s\n' \
     "$(sw_vers -productVersion)" "$(uname -m)" "$pin"
 printf 'WHP Automake macOS: seed=%s; make=%s; m4=%s; perl=%s\n' \
     "$ac_id" "$make" "$m4" "$perl"
+printf 'WHP Automake macOS: makeinfo=%s\\n' "$makeinfo"
 
 (
     cd "$work/source"
