@@ -40,7 +40,7 @@ brew_tool()
     [ -n "${1:-}" ] && command -v brew >/dev/null 2>&1 || return 1
     brew_dir=$(brew --prefix "$1" 2>/dev/null) || return 1
     [ -x "$brew_dir/bin/$2" ] || return 1
-    printf '%s\\n' "$brew_dir/bin/$2"
+    printf '%s\n' "$brew_dir/bin/$2"
 }
 make=
 if [ -n "${MAKE:-}" ]; then
@@ -134,7 +134,7 @@ printf 'WHP Automake macOS: host=%s arch=%s source=%s\n' \
     "$(sw_vers -productVersion)" "$(uname -m)" "$pin"
 printf 'WHP Automake macOS: seed=%s; make=%s; m4=%s; perl=%s\n' \
     "$ac_id" "$make" "$m4" "$perl"
-printf 'WHP Automake macOS: makeinfo=%s\\n' "$makeinfo"
+printf 'WHP Automake macOS: makeinfo=%s\n' "$makeinfo"
 
 (
     cd "$work/source"
