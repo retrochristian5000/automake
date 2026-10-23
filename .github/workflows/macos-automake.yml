@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          brew install autoconf m4 make
+          brew install autoconf m4 make texinfo
           echo "GNU_AUTOCONF_DIR=$(brew --prefix autoconf)/bin" >> "$GITHUB_ENV"
           echo "GNU_M4_DIR=$(brew --prefix m4)/bin" >> "$GITHUB_ENV"
           echo "GNU_MAKE_DIR=$(brew --prefix make)/bin" >> "$GITHUB_ENV"
