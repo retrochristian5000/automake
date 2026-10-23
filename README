@@ -50,6 +50,38 @@ be informed, subscribe to that list by following the instructions at
 For any copyright year range specified as YYYY-ZZZZ in this package,
 the range specifies every single year in that closed interval.
 
+WHP fork: native macOS bootstrap verification
+-----------------------------------------------
+
+The development checkout self-hosts aclocal/automake, so it needs a
+matched seed GNU Autoconf/autom4te pair, Perl, GNU M4, GNU Make, and
+GNU Texinfo (makeinfo). macOS base tools or mixed Homebrew/Apple tools
+must not be assumed interchangeable.
+
+Install the prerequisites, if needed, using Homebrew:
+
+    brew install autoconf m4 make texinfo
+
+From this fork's Git checkout on a native Mac:
+
+    /bin/sh contrib/macos-build-smoke.sh
+
+The script detects Homebrew's keg-only GNU M4, GNU Make, and Texinfo,
+tests seed Autoconf/autom4te compatibility, then bootstraps a disposable
+clone at the checked-out revision. It builds out of tree, runs the
+get-sysconf smoke test, installs only into a disposable prefix, and
+checks the installed executables and versioned M4 macro directory.
+It never installs into /usr/local, changes the host OS, or modifies the
+working source checkout. Set WHP_AUTOMAKE_KEEP_BUILD=1 to preserve the
+temporary build for diagnosis.
+
+GitHub Actions runs the same smoke test on both Apple Silicon
+(`macos-15`) and Intel (`macos-15-intel`). The workflow result,
+rather than the presence of these files, determines whether a given
+fork revision has been successfully validated for each architecture.
+Water consumes a separately recorded gitlink, so updating this fork's
+master does not automatically update Water's pinned revision.
+
 -----
 
 Copyright (C) 1994-2021 Free Software Foundation, Inc.
