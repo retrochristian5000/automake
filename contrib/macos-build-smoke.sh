@@ -122,6 +122,7 @@ case "$perl" in
     *) error "Perl must be an absolute executable path: $perl" ;;
 esac
 ln -s "$perl" "$work/bin/perl&bootstrap" || error 'cannot expose Perl substitution fixture'
+host_perl=$perl
 perl="$work/bin/perl&bootstrap"
 ln -s "$m4" "$work/bin/m4" || error 'cannot expose GNU M4'
 PATH="$work/bin:$(dirname "$makeinfo"):$PATH"
@@ -150,6 +151,14 @@ printf 'WHP Automake macOS: makeinfo=%s\n' "$makeinfo"
 ) || error 'bootstrap failed'
 [ -f "$work/source/configure" ] ||
     error 'bootstrap did not generate configure'
+
+# Keep the metacharacter probe limited to bootstrap. Makefile recipes
+# interpolate PERL as shell text and do not consistently quote paths
+# containing '&', so use the ordinary interpreter for configure/build.
+perl=$host_perl
+PERL=$perl
+export PERL
+unset host_perl
 
 prefix="$work/install"
 (
