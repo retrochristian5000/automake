@@ -104,13 +104,18 @@ rm -rf automake-$APIVERSION
 mkdir automake-$APIVERSION
 cp -rf lib/* automake-$APIVERSION
 
+# Escape replacement metacharacters before substituting variables into
+# generated scripts.  In sed, &, the delimiter %, and backslashes have
+# meanings that must not corrupt an executable path such as PERL.
+perl_sed=$(printf '%s\\n' "$PERL" | sed 's/[\\\\&%]/\\\\&/g')
+
 dosubst ()
 {
   rm -f $2
   in=`echo $1 | sed 's,^.*/,,'`
   sed -e "s%@APIVERSION@%$APIVERSION%g" \
       -e "s%@PACKAGE@%$PACKAGE%g" \
-      -e "s%@PERL@%$PERL%g" \
+      -e "s%@PERL@%$perl_sed%g" \
       -e "s%@SHELL@%$BOOTSTRAP_SHELL%g" \
       -e "s%@VERSION@%$VERSION%g" \
       -e "s%@datadir@%$datadir%g" \
@@ -130,6 +135,14 @@ dosubst m4/amversion.in m4/amversion.m4
 # Create temporary replacement for aclocal and automake.
 dosubst bin/aclocal.in bin/aclocal.tmp
 dosubst bin/automake.in bin/automake.tmp
+
+# Guard against accidental corruption of the generated Perl shebang.
+IFS= read -r whp_shebang < bin/aclocal.tmp
+if test "$whp_shebang" != "#!$PERL"; then
+  echo "$me: Perl path substitution corrupted generated aclocal" >&2
+  exit 1
+fi
+unset whp_shebang
 
 # Create required makefile snippets.
 $PERL ./gen-testsuite-part > t/testsuite-part.tmp

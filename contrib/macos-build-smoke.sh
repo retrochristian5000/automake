@@ -115,6 +115,14 @@ trap cleanup 0
 trap 'exit 1' 1 2 3 15
 
 mkdir -p "$work/bin" "$work/build"
+# Exercise sed metacharacters in PERL without modifying the host interpreter.
+# This is a real executable path, not a command line or a mock interpreter.
+case "$perl" in
+    /*) ;;
+    *) error "Perl must be an absolute executable path: $perl" ;;
+esac
+ln -s "$perl" "$work/bin/perl&bootstrap" || error 'cannot expose Perl substitution fixture'
+perl="$work/bin/perl&bootstrap"
 ln -s "$m4" "$work/bin/m4" || error 'cannot expose GNU M4'
 PATH="$work/bin:$(dirname "$makeinfo"):$PATH"
 export PATH
