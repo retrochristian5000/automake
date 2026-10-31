@@ -107,7 +107,7 @@ cp -rf lib/* automake-$APIVERSION
 # Escape replacement metacharacters before substituting variables into
 # generated scripts.  In sed, &, the delimiter %, and backslashes have
 # meanings that must not corrupt an executable path such as PERL.
-perl_sed=$(printf '%s\\n' "$PERL" | sed 's/[\\\\&%]/\\\\&/g')
+perl_sed=$(printf '%s\n' "$PERL" | sed 's/[\\&%]/\\&/g')
 
 dosubst ()
 {
