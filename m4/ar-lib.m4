@@ -24,18 +24,14 @@ AC_CACHE_CHECK([the archiver ($AR) interface], [am_cv_ar_interface],
   [AC_LANG_PUSH([C])
    am_cv_ar_interface=ar
    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[int some_variable = 0;]])],
-     [am_ar_try='$AR $ARFLAGS libconftest.a conftest.$ac_objext >&AS_MESSAGE_LOG_FD'
-      AC_TRY_EVAL([am_ar_try])
-      if test "$ac_status" -eq 0; then
+     [dnl Avoid AC_TRY_EVAL: its repeated eval can reinterpret AR and ARFLAGS.
+      dnl AM_RUN_LOG performs a single shell evaluation and records the status.
+      if AM_RUN_LOG([$AR $ARFLAGS libconftest.a conftest.$ac_objext]); then
         am_cv_ar_interface=ar
+      elif AM_RUN_LOG([$AR -NOLOGO -OUT:conftest.lib conftest.$ac_objext]); then
+        am_cv_ar_interface=lib
       else
-        am_ar_try='$AR -NOLOGO -OUT:conftest.lib conftest.$ac_objext >&AS_MESSAGE_LOG_FD'
-        AC_TRY_EVAL([am_ar_try])
-        if test "$ac_status" -eq 0; then
-          am_cv_ar_interface=lib
-        else
-          am_cv_ar_interface=unknown
-        fi
+        am_cv_ar_interface=unknown
       fi
       rm -f conftest.lib libconftest.a
      ])

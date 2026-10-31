@@ -94,4 +94,16 @@ $FGREP 'am_cv_ar_interface=' configure
 $MAKE check
 $MAKE distcheck DISTCHECK_CONFIGURE_FLAGS="AR=lib RANLIB=:"
 
+# Preserve the supported multiword Microsoft librarian command, and do not
+# use eval to interpret shell syntax supplied in an invalid AR override.
+./configure 'AR=lib -lib' RANLIB=: >multi-ar.log
+grep 'the archiver (lib -lib) interface.*lib' multi-ar.log
+rm -f ar-eval-injected
+if ./configure 'AR=lib; touch ar-eval-injected' RANLIB=: >bad-ar.log 2>&1; then
+  echo 'invalid archiver command unexpectedly accepted' >&2
+  exit 1
+fi
+test ! -e ar-eval-injected
+grep 'could not determine.*interface' bad-ar.log
+
 :

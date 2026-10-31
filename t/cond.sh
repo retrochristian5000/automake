@@ -37,6 +37,18 @@ $AUTOMAKE
 grep '^TEST_FALSE' Makefile.in && exit 1
 grep '^TEST_TRUE' Makefile.in && exit 1
 grep '^@TEST_TRUE@VAR = true$' Makefile.in
-grep '^@TEST_FALSE@VAR = false$' Makefile.in
+grep '^@TEST_FALSE@VAR = false
+ Makefile.in
+
+# TRUE and FALSE are reserved condition names.  Diagnose them at M4
+# expansion time; the modern diagnostic is m4_fatal, not AC_FATAL.
+cat >>configure.ac <<'END'
+AM_CONDITIONAL([TRUE], [true])
+END
+if $AUTOCONF >stdout 2>stderr; then
+  echo 'reserved TRUE conditional unexpectedly accepted' >&2
+  exit 1
+fi
+grep 'AM_CONDITIONAL: invalid condition: TRUE' stderr
 
 :

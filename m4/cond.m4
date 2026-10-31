@@ -11,8 +11,8 @@
 # Define a conditional.
 AC_DEFUN([AM_CONDITIONAL],
 [AC_PREREQ([2.52])dnl
- m4_if([$1], [TRUE],  [AC_FATAL([$0: invalid condition: $1])],
-       [$1], [FALSE], [AC_FATAL([$0: invalid condition: $1])])dnl
+ m4_if([$1], [TRUE],  [m4_fatal([$0: invalid condition: $1])],
+       [$1], [FALSE], [m4_fatal([$0: invalid condition: $1])])dnl
 AC_SUBST([$1_TRUE])dnl
 AC_SUBST([$1_FALSE])dnl
 _AM_SUBST_NOTMAKE([$1_TRUE])dnl
