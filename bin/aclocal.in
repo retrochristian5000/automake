@@ -1153,9 +1153,9 @@ sub parse_arguments ()
     }
 
   # Finally, adds any directory listed in the 'dirlist' file.
-  if (@system_includes && open (DIRLIST, "$system_includes[0]/dirlist"))
+  if (@system_includes && open (my $dirlist, '<', "$system_includes[0]/dirlist"))
     {
-      while (<DIRLIST>)
+      while (<$dirlist>)
         {
           # Ignore '#' lines.
           next if /^#/;
@@ -1167,7 +1167,7 @@ sub parse_arguments ()
               push (@system_includes, $dir) if -d $dir;
             }
         }
-      close (DIRLIST);
+      close ($dirlist);
     }
 }
 

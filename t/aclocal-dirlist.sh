@@ -53,4 +53,18 @@ grep 'GUILE-VERSION' configure
 # but it's OK because VPATH builds are done by 'make distcheck'.
 grep 'I should not be included' configure && exit 1
 
+# Perl's legacy two-argument open interprets a leading '>' as output mode.
+# A directory named '>acdir' must instead be read literally; neither the
+# requested dirlist nor the unrelated acdir/dirlist may be overwritten.
+# Filesystems that disallow '>' in filenames (e.g. Windows) skip this case.
+if mkdir '>acdir' 2>/dev/null; then
+  printf '%s\n' './dirlist-test' > '>acdir/dirlist'
+  cp acdir/dirlist acdir/dirlist.expected
+  $ACLOCAL --system-acdir '>acdir'
+  cmp acdir/dirlist acdir/dirlist.expected
+  printf '%s\n' './dirlist-test' | cmp - '>acdir/dirlist'
+  $AUTOCONF
+  grep 'GUILE-VERSION' configure
+fi
+
 :
