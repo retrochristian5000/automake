@@ -136,6 +136,23 @@ export M4 PERL AUTOCONF AUTOM4TE
 git clone -q --local --no-hardlinks "$root" "$work/source" ||
     error 'cannot clone Automake source for isolated bootstrap'
 pin=$(git -C "$work/source" rev-parse HEAD)
+
+# A whitespace-containing Perl interpreter is incompatible with the
+# generated #! line. Reject it before bootstrap touches generated sources.
+# Validate that this diagnostic is deliberate rather than a later sed,
+# chmod, or interpreter failure.
+bad_perl="$work/bin/perl with spaces"
+ln -s "$host_perl" "$bad_perl" ||
+    error 'cannot prepare invalid Perl-path test'
+if (
+    cd "$work/source"
+    PERL="$bad_perl" /bin/sh ./bootstrap >"$work/bad-perl.log" 2>&1
+); then
+    error 'bootstrap accepted a Perl interpreter path containing spaces'
+fi
+grep -Fq 'PERL must name one executable without whitespace' "$work/bad-perl.log" ||
+    error 'bootstrap did not report the unsupported Perl interpreter path'
+
 api=$(sed -n 's/^APIVERSION=//p' "$work/source/configure.ac")
 [ -n "$api" ] || error 'missing Automake API version'
 

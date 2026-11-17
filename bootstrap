@@ -54,18 +54,25 @@ fi
 set -e
 
 # Set program basename.
-me=`echo "$0" | sed 's,^.*/,,'`
+me=${0##*/}
 
 # Let user choose which version of autoconf, autom4te and perl to use.
-: ${AUTOCONF=autoconf}
+: "${AUTOCONF=autoconf}"
 export AUTOCONF  # might be used by aclocal and/or automake
-: ${AUTOM4TE=autom4te}
+: "${AUTOM4TE=autom4te}"
 export AUTOM4TE  # ditto
-: ${PERL=perl}
+: "${PERL=perl}"
+# Generated Perl scripts use a shebang, which cannot name an interpreter
+# containing whitespace. Fail before overwriting any generated sources.
+case $PERL in
+  *[[:space:]]*)
+    printf '%s\n' "$me: PERL must name one executable without whitespace: $PERL" >&2
+    exit 1 ;;
+esac
 
 # Variables to substitute.
-VERSION=`sed -ne '/AC_INIT/s/^[^[]*\[[^[]*\[\([^]]*\)\].*$/\1/p' configure.ac`
-APIVERSION=`sed -n 's/^APIVERSION=//p' configure.ac`
+VERSION=$(sed -ne '/AC_INIT/s/^[^[]*\[[^[]*\[\([^]]*\)\].*$/\1/p' configure.ac)
+APIVERSION=$(sed -n 's/^APIVERSION=//p' configure.ac)
 PACKAGE=automake
 datadir=.
 # This should be automatically updated by the 'update-copyright'
@@ -75,7 +82,7 @@ RELEASE_YEAR=2026
 # Override SHELL.  This is required on DJGPP so that Perl's system()
 # uses bash, not COMMAND.COM which doesn't quote arguments properly.
 # It's not used otherwise.
-if test -n "$DJDIR"; then
+if test -n "${DJDIR:-}"; then
   BOOTSTRAP_SHELL=/dev/env/DJDIR/bin/bash.exe
 else
   BOOTSTRAP_SHELL=/bin/sh
@@ -93,16 +100,16 @@ if test -z "$APIVERSION"; then
 fi
 
 # Make a dummy versioned directory for aclocal.
-rm -rf aclocal-$APIVERSION
-mkdir aclocal-$APIVERSION
-if test -d automake-$APIVERSION; then
-  find automake-$APIVERSION -exec chmod u+wx '{}' ';'
+rm -rf "aclocal-$APIVERSION"
+mkdir "aclocal-$APIVERSION"
+if test -d "automake-$APIVERSION"; then
+  find "automake-$APIVERSION" -exec chmod u+wx '{}' ';'
 fi
-rm -rf automake-$APIVERSION
+rm -rf "automake-$APIVERSION"
 # Can't use "ln -s lib automake-$APIVERSION", that would create a
 # lib.exe stub under DJGPP 2.03.
-mkdir automake-$APIVERSION
-cp -rf lib/* automake-$APIVERSION
+mkdir "automake-$APIVERSION"
+cp -rf lib/* "automake-$APIVERSION"
 
 # Escape replacement metacharacters before substituting variables into
 # generated scripts.  In sed, &, the delimiter %, and backslashes have
@@ -111,8 +118,8 @@ perl_sed=$(printf '%s\n' "$PERL" | sed 's/[\\&%]/\\&/g')
 
 dosubst ()
 {
-  rm -f $2
-  in=`echo $1 | sed 's,^.*/,,'`
+  rm -f "$2"
+  in=${1##*/}
   sed -e "s%@APIVERSION@%$APIVERSION%g" \
       -e "s%@PACKAGE@%$PACKAGE%g" \
       -e "s%@PERL@%$perl_sed%g" \
@@ -121,8 +128,8 @@ dosubst ()
       -e "s%@datadir@%$datadir%g" \
       -e "s%@RELEASE_YEAR@%$RELEASE_YEAR%g" \
       -e "s%@configure_input@%Generated from $in; do not edit by hand.%g" \
-      $1 > $2
-  chmod a-w $2
+      "$1" > "$2"
+  chmod a-w "$2"
 }
 
 # Create temporary replacement for lib/Automake/Config.pm.
@@ -145,18 +152,18 @@ fi
 unset whp_shebang
 
 # Create required makefile snippets.
-$PERL ./gen-testsuite-part > t/testsuite-part.tmp
+"$PERL" ./gen-testsuite-part > t/testsuite-part.tmp
 chmod a-w t/testsuite-part.tmp
 mv -f t/testsuite-part.tmp t/testsuite-part.am
 
 # Run the autotools.  Bail out if any warning is triggered.
 # Use '-I' here so that our own *.m4 files in m4/ gets included,
 # not copied, in aclocal.m4.
-$PERL ./bin/aclocal.tmp -Wall -Werror -I m4 \
+"$PERL" ./bin/aclocal.tmp -Wall -Werror -I m4 \
                         --automake-acdir=m4 --system-acdir=m4/acdir
-$AUTOCONF -Wall -Werror
-$PERL ./bin/automake.tmp -Wall -Werror
+"$AUTOCONF" -Wall -Werror
+"$PERL" ./bin/automake.tmp -Wall -Werror
 
 # Remove temporary files and directories.
-rm -rf aclocal-$APIVERSION automake-$APIVERSION
+rm -rf "aclocal-$APIVERSION" "automake-$APIVERSION"
 rm -f bin/aclocal.tmp bin/automake.tmp
