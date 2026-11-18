@@ -328,9 +328,18 @@ AC_DEFUN([_AM_CHECK_CANDIDATE_SHELL],
       [rm -f conftest-alias.sh],
       [rm -f conftest-alias.sh; am_score=1; break])
 
+    # The test suite uses both 'test' and '[ ... ]'.  Verifying only
+    # 'test' can accept a shell with a broken bracket builtin, even though
+    # it satisfies the other POSIX feature checks above.  Keep these
+    # predicates paired instead of assuming that the two names agree.
     _AM_CHECK_SHELL_FEATURE([$1],
-      [supports "test -e"],
-      [test -e config.log && test -e . && test ! -e nonesuch],
+      [checks POSIX test and bracket predicates consistently],
+      [test -e config.log && [[ -e config.log ]] &&
+       test -d . && [[ -d . ]] &&
+       test ! -e nonesuch && [[ ! -e nonesuch ]] &&
+       test -n "a b" && [[ -n "a b" ]] &&
+       test -z "" && [[ -z "" ]] &&
+       test 7 -eq 7 && [[ 7 -eq 7 ]]],
       [], [am_score=1; break])
 
     break
